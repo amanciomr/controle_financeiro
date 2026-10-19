@@ -1,0 +1,13 @@
+<div style="font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif; max-width: 420px; margin: 0 auto; padding: 24px; color: #0f172a">
+  <h2 style="margin: 0 0 8px">🏡 Finanças Amâncio</h2>
+  <p>Seu código de acesso:</p>
+  <p style="font-size: 32px; font-weight: 700; letter-spacing: 8px; margin: 8px 0 16px">{{ .Token }}</p>
+  <p>Digite o código no app ou toque no botão abaixo para entrar:</p>
+  <p>
+    <a href="{{ .SiteURL }}/auth/confirm?token_hash={{ .TokenHash }}&type=email&next=/"
+       style="display: inline-block; background: #047857; color: #fff; padding: 12px 20px; border-radius: 12px; text-decoration: none; font-weight: 600">
+      Entrar no app
+    </a>
+  </p>
+  <p style="color: #64748b; font-size: 13px">O código vale por 1 hora. Se você não pediu este acesso, ignore este e-mail.</p>
+</div>
