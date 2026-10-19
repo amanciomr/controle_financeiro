@@ -59,7 +59,10 @@ export function digitsToCents(input: string): Cents {
  * "-3,00". Usado na importação e em campos livres. Retorna null se inválido.
  */
 export function parseBRL(input: string): Cents | null {
-  let s = input.trim().replace(/^R\$\s*/i, "").replace(/\s/g, "");
+  let s = input
+    .trim()
+    .replace(/^R\$\s*/i, "")
+    .replace(/\s/g, "");
   let negative = false;
   if (s.startsWith("-")) {
     negative = true;

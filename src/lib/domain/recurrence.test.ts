@@ -174,7 +174,9 @@ describe("financiamento (nº de parcelas)", () => {
   });
 
   it("retorna null para recorrência sem parcelas", () => {
-    expect(installmentProgress({ frequency: "monthly", startDate: "2026-01-01" }, "2026-10-19")).toBeNull();
+    expect(
+      installmentProgress({ frequency: "monthly", startDate: "2026-01-01" }, "2026-10-19"),
+    ).toBeNull();
   });
 });
 
@@ -197,7 +199,9 @@ describe("lastOccurrence", () => {
 
 describe("validateRule", () => {
   it("aceita regra válida", () => {
-    expect(validateRule({ frequency: "monthly", dayOfMonth: 31, startDate: "2026-01-01" })).toEqual([]);
+    expect(validateRule({ frequency: "monthly", dayOfMonth: 31, startDate: "2026-01-01" })).toEqual(
+      [],
+    );
   });
 
   it("aponta erros", () => {
@@ -210,7 +214,11 @@ describe("validateRule", () => {
         totalInstallments: 0,
       }),
     ).toHaveLength(3);
-    expect(validateRule({ frequency: "weekly", weekday: 7, startDate: "2026-01-01" })).toHaveLength(1);
-    expect(validateRule({ frequency: "yearly", monthOfYear: 13, startDate: "2026-01-01" })).toHaveLength(1);
+    expect(validateRule({ frequency: "weekly", weekday: 7, startDate: "2026-01-01" })).toHaveLength(
+      1,
+    );
+    expect(
+      validateRule({ frequency: "yearly", monthOfYear: 13, startDate: "2026-01-01" }),
+    ).toHaveLength(1);
   });
 });

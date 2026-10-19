@@ -55,7 +55,10 @@ export function validateRule(rule: RecurrenceRule): string[] {
   if (endDate && endDate < startDate) {
     errors.push("A data final não pode ser anterior à inicial.");
   }
-  if (totalInstallments != null && (!Number.isInteger(totalInstallments) || totalInstallments < 1)) {
+  if (
+    totalInstallments != null &&
+    (!Number.isInteger(totalInstallments) || totalInstallments < 1)
+  ) {
     errors.push("Número de parcelas deve ser pelo menos 1.");
   }
   return errors;
@@ -132,7 +135,10 @@ export interface InstallmentProgress {
 }
 
 /** Progresso de um financiamento: "parcela 23 de 48, faltam 25". */
-export function installmentProgress(rule: RecurrenceRule, today: ISODate): InstallmentProgress | null {
+export function installmentProgress(
+  rule: RecurrenceRule,
+  today: ISODate,
+): InstallmentProgress | null {
   if (rule.totalInstallments == null) return null;
   let elapsed = 0;
   let next: Occurrence | null = null;
