@@ -23,7 +23,9 @@ const transactionInput = z.object({
 });
 export type TransactionInput = z.input<typeof transactionInput>;
 
-export async function saveTransaction(raw: TransactionInput): Promise<ActionResult<{ id: string }>> {
+export async function saveTransaction(
+  raw: TransactionInput,
+): Promise<ActionResult<{ id: string }>> {
   const parsed = transactionInput.safeParse(raw);
   if (!parsed.success) return validationError(parsed.error);
   const input = parsed.data;
@@ -31,7 +33,8 @@ export async function saveTransaction(raw: TransactionInput): Promise<ActionResu
 
   const category = ctx.categories.find((c) => c.id === input.categoryId);
   if (!category) return fail("Categoria não encontrada.");
-  if (category.kind !== input.type) return fail("A categoria não combina com o tipo do lançamento.");
+  if (category.kind !== input.type)
+    return fail("A categoria não combina com o tipo do lançamento.");
 
   const values = {
     type: input.type,
@@ -71,7 +74,10 @@ export async function saveTransaction(raw: TransactionInput): Promise<ActionResu
   if (input.paymentMethod && input.type === "expense") {
     await ctx.supabase
       .from("household_members")
-      .update({ last_payment_method: input.paymentMethod, last_account_id: input.accountId ?? null })
+      .update({
+        last_payment_method: input.paymentMethod,
+        last_account_id: input.accountId ?? null,
+      })
       .eq("household_id", ctx.household.id)
       .eq("user_id", ctx.userId);
   }

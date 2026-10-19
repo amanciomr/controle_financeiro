@@ -62,11 +62,7 @@ export function emptyValues(options: FormOptions): TransactionValues {
 }
 
 function normalize(s: string) {
-  return s
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "");
+  return s.trim().toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "");
 }
 
 export function TransactionForm({

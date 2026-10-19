@@ -26,7 +26,11 @@ export const getFormOptions = cache(async (): Promise<FormOptions> => {
     usage.set(r.category_id, (usage.get(r.category_id) ?? 0) + 1);
     const key = `${r.type}:${r.description.trim().toLowerCase()}`;
     if (!hints.has(key)) {
-      hints.set(key, { description: r.description.trim(), categoryId: r.category_id, type: r.type });
+      hints.set(key, {
+        description: r.description.trim(),
+        categoryId: r.category_id,
+        type: r.type,
+      });
     }
   }
 

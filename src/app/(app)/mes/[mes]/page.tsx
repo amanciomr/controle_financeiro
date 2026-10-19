@@ -52,7 +52,11 @@ export default async function MonthPage(props: PageProps<"/mes/[mes]">) {
   return (
     <div className="space-y-4">
       <header className="flex items-center justify-between">
-        <Link href={`/mes/${addMonths(mes, -1)}`} className="btn-ghost px-3" aria-label="Mês anterior">
+        <Link
+          href={`/mes/${addMonths(mes, -1)}`}
+          className="btn-ghost px-3"
+          aria-label="Mês anterior"
+        >
           ‹
         </Link>
         <div className="text-center">
@@ -63,7 +67,11 @@ export default async function MonthPage(props: PageProps<"/mes/[mes]">) {
             </Link>
           )}
         </div>
-        <Link href={`/mes/${addMonths(mes, 1)}`} className="btn-ghost px-3" aria-label="Próximo mês">
+        <Link
+          href={`/mes/${addMonths(mes, 1)}`}
+          className="btn-ghost px-3"
+          aria-label="Próximo mês"
+        >
           ›
         </Link>
       </header>
@@ -123,7 +131,10 @@ export default async function MonthPage(props: PageProps<"/mes/[mes]">) {
           </div>
           <div className="h-2 overflow-hidden rounded-full bg-card-2">
             <div
-              className={cx("h-full rounded-full", summary.remainingAvailable < 0 ? "bg-neg" : "bg-accent")}
+              className={cx(
+                "h-full rounded-full",
+                summary.remainingAvailable < 0 ? "bg-neg" : "bg-accent",
+              )}
               style={{ width: `${variablePct * 100}%` }}
             />
           </div>

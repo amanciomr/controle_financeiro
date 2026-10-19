@@ -31,15 +31,7 @@ export const FREQUENCIES: { value: Frequency; label: string }[] = [
   { value: "weekly", label: "Semanal" },
 ];
 
-export const WEEKDAYS = [
-  "domingo",
-  "segunda",
-  "terça",
-  "quarta",
-  "quinta",
-  "sexta",
-  "sábado",
-];
+export const WEEKDAYS = ["domingo", "segunda", "terça", "quarta", "quinta", "sexta", "sábado"];
 
 export const MONTH_NAMES = [
   "janeiro",

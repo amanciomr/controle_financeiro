@@ -56,7 +56,9 @@ export async function saveCategory(raw: CategoryInput): Promise<ActionResult> {
 }
 
 /** Exclui se não tiver uso; caso contrário, arquiva. */
-export async function deleteCategory(categoryId: string): Promise<ActionResult<{ archived: boolean }>> {
+export async function deleteCategory(
+  categoryId: string,
+): Promise<ActionResult<{ archived: boolean }>> {
   if (!id.safeParse(categoryId).success) return fail("Categoria inválida.");
   const ctx = await getAppContext();
   const { error } = await ctx.supabase.from("categories").delete().eq("id", categoryId);

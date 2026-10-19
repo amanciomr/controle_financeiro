@@ -72,11 +72,7 @@ export const getAppContext = cache(async (): Promise<AppContext> => {
       .order("kind", { ascending: false })
       .order("sort_order")
       .order("name"),
-    supabase
-      .from("accounts")
-      .select("*")
-      .eq("household_id", household.id)
-      .order("created_at"),
+    supabase.from("accounts").select("*").eq("household_id", household.id).order("created_at"),
   ]);
 
   const memberList = members.data ?? [];

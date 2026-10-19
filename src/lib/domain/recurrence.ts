@@ -151,3 +151,19 @@ export function installmentProgress(
   const total = last?.index ?? 0;
   return { total, elapsed, remaining: total - elapsed, next, last };
 }
+
+/**
+ * Financiamento mensal informado como "a parcela deste mês é a nº N":
+ * a 1ª parcela caiu N−1 meses atrás. Devolve o 1º dia daquele mês como data
+ * inicial, de modo que a ocorrência deste mês tenha índice N.
+ */
+export function financingStartDate(today: ISODate, currentInstallment: number): ISODate {
+  return `${addMonths(monthOf(today), -(currentInstallment - 1))}-01`;
+}
+
+/** Inverso de financingStartDate: qual parcela cai no mês de `today`. */
+export function installmentOfMonth(startDate: ISODate, today: ISODate): number {
+  const [sy, sm] = startDate.split("-").map(Number);
+  const [ty, tm] = today.split("-").map(Number);
+  return (ty - sy) * 12 + (tm - sm) + 1;
+}

@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
+  financingStartDate,
+  installmentOfMonth,
   installmentProgress,
   lastOccurrence,
   occurrencesBetween,
@@ -220,5 +222,28 @@ describe("validateRule", () => {
     expect(
       validateRule({ frequency: "yearly", monthOfYear: 13, startDate: "2026-01-01" }),
     ).toHaveLength(1);
+  });
+});
+
+describe("financingStartDate / installmentOfMonth", () => {
+  it("parcela 23 deste mês → começou 22 meses atrás", () => {
+    expect(financingStartDate("2026-10-19", 23)).toBe("2024-12-01");
+    expect(installmentOfMonth("2024-12-01", "2026-10-19")).toBe(23);
+  });
+
+  it("a ocorrência deste mês recebe o número informado, inclusive no fim do mês", () => {
+    const rule: RecurrenceRule = {
+      frequency: "monthly",
+      dayOfMonth: 31,
+      startDate: financingStartDate("2026-02-28", 5),
+      totalInstallments: 48,
+    };
+    expect(occurrencesBetween(rule, "2026-02-01", "2026-02-28")).toEqual([
+      { date: "2026-02-28", index: 5 },
+    ]);
+  });
+
+  it("parcela 1 começa no mês atual", () => {
+    expect(financingStartDate("2027-01-05", 1)).toBe("2027-01-01");
   });
 });

@@ -32,11 +32,7 @@ export function QuickAdd({ options }: { options: FormOptions }) {
         +
       </button>
 
-      <Sheet
-        dialogRef={dialogRef}
-        title="Novo lançamento"
-        onClose={resetForm}
-      >
+      <Sheet dialogRef={dialogRef} title="Novo lançamento" onClose={resetForm}>
         <TransactionForm
           key={formKey}
           options={options}

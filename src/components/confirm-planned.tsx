@@ -72,7 +72,12 @@ export function ConfirmPlanned({
       </div>
       {editing && (
         <div className="mt-2 flex items-center gap-2 pl-9">
-          <MoneyInput value={value} onChange={setValue} className="py-1.5" aria-label="Valor real" />
+          <MoneyInput
+            value={value}
+            onChange={setValue}
+            className="py-1.5"
+            aria-label="Valor real"
+          />
           <button
             type="button"
             className="btn-primary py-1.5"

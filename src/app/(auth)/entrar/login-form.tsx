@@ -117,7 +117,9 @@ export function LoginForm({ next }: { next: string }) {
       <button className="btn-primary w-full" disabled={busy}>
         {busy ? "Enviando…" : "Receber código por e-mail"}
       </button>
-      <p className="text-center text-xs text-muted">Sem senha: você recebe um código a cada login.</p>
+      <p className="text-center text-xs text-muted">
+        Sem senha: você recebe um código a cada login.
+      </p>
     </form>
   );
 }
