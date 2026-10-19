@@ -4,6 +4,7 @@ import {
   centsToInput,
   digitsToCents,
   formatBRL,
+  formatDecimal,
   parseBRL,
   splitEvenly,
 } from "./money";
@@ -14,6 +15,11 @@ describe("formatBRL", () => {
     expect(formatBRL(5)).toBe("R$ 0,05");
     expect(formatBRL(0)).toBe("R$ 0,00");
     expect(formatBRL(100000000)).toBe("R$ 1.000.000,00");
+  });
+
+  it("formata sem símbolo para tabelas", () => {
+    expect(formatDecimal(123456)).toBe("1.234,56");
+    expect(formatDecimal(-5)).toBe("-0,05");
   });
 
   it("formata negativos", () => {

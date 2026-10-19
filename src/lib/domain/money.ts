@@ -27,6 +27,16 @@ export function formatBRL(cents: Cents): string {
   return brl.format(cents / 100).replace(/ /g, " ");
 }
 
+const decimal = new Intl.NumberFormat("pt-BR", {
+  minimumFractionDigits: 2,
+  maximumFractionDigits: 2,
+});
+
+/** 123456 → "1.234,56" (sem símbolo) — para tabelas com cabeçalho "R$". */
+export function formatDecimal(cents: Cents): string {
+  return decimal.format(cents / 100);
+}
+
 /** 123456 → "R$ 1.235" — para eixos de gráfico e espaços apertados. */
 export function formatBRLCompact(cents: Cents): string {
   return brlCompact.format(Math.round(cents / 100)).replace(/ /g, " ");
