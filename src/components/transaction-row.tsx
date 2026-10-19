@@ -56,20 +56,12 @@ export function TransactionRow({
         {category?.icon ?? "📦"}
       </span>
       <span className="min-w-0 flex-1">
-        <span className="flex items-center gap-2">
-          <span className="truncate font-medium">{tx.description}</span>
-          {tx.status === "planned" && !hideStatus && (
-            <span className="shrink-0 rounded-full border border-line px-1.5 text-[10px] text-muted uppercase">
-              previsto
-            </span>
-          )}
-          {tx.recurrence_id && (
-            <span className="shrink-0 text-xs text-muted" title="Recorrente">
-              🔁
-            </span>
-          )}
-        </span>
+        <span className="block truncate font-medium">{tx.description}</span>
         <span className="block truncate text-xs text-muted">
+          {tx.recurrence_id && <span title="Recorrente">🔁 </span>}
+          {tx.status === "planned" && !hideStatus && (
+            <span className="font-semibold text-warn">previsto · </span>
+          )}
           {showDate && `${formatWeekdayShort(tx.date)} ${formatDayMonth(tx.date)} · `}
           {details.join(" · ")}
           {author && ` · ${author}`}
