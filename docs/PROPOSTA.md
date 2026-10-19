@@ -1,7 +1,8 @@
 # Proposta de arquitetura e modelo de dados
 
-> Status: **aguardando aprovação**. Nenhum código de aplicação foi escrito ainda.
-> As decisões marcadas com **[D#]** estão detalhadas na seção "Decisões em aberto", cada uma com um padrão recomendado.
+> Status: **aprovada em 19/10/2026**, com todos os padrões recomendados das decisões [D#] e mais:
+> e-mail via **SMTP do Gmail** (senha de app) (D8), nome do app **Finanças Amâncio**, membros **Rafael** e **Ana** (D15).
+> Fase 1 implementada; veja o README para setup e deploy.
 
 ---
 
