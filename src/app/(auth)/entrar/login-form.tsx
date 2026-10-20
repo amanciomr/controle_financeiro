@@ -23,10 +23,12 @@ export function LoginForm({ next }: { next: string }) {
     });
     setBusy(false);
     if (error) {
+      // O detalhe técnico ajuda a diagnosticar SMTP/configuração do Supabase.
+      const detail = [error.status, error.code, error.message].filter(Boolean).join(" · ");
       setError(
         error.status === 429
           ? "Muitas tentativas. Aguarde um minuto e tente de novo."
-          : "Não foi possível enviar o e-mail. Confira o endereço.",
+          : `Não foi possível enviar o e-mail. (${detail})`,
       );
       return;
     }
