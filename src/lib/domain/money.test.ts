@@ -4,6 +4,7 @@ import {
   centsToInput,
   digitsToCents,
   formatBRL,
+  formatAxis,
   formatDecimal,
   parseBRL,
   splitEvenly,
@@ -20,6 +21,13 @@ describe("formatBRL", () => {
   it("formata sem símbolo para tabelas", () => {
     expect(formatDecimal(123456)).toBe("1.234,56");
     expect(formatDecimal(-5)).toBe("-0,05");
+  });
+
+  it("formata rótulos curtos de eixo", () => {
+    expect(formatAxis(850000)).toBe("8,5 mil");
+    expect(formatAxis(800000)).toBe("8 mil");
+    expect(formatAxis(45000)).toBe("450");
+    expect(formatAxis(0)).toBe("0");
   });
 
   it("formata negativos", () => {

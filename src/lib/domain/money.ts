@@ -42,6 +42,15 @@ export function formatBRLCompact(cents: Cents): string {
   return brlCompact.format(Math.round(cents / 100)).replace(/ /g, " ");
 }
 
+/** Rótulo curto para eixos de gráfico: 850000 → "8,5 mil", 45000 → "450". */
+export function formatAxis(cents: Cents): string {
+  const reais = cents / 100;
+  if (Math.abs(reais) >= 1000) {
+    return `${(reais / 1000).toLocaleString("pt-BR", { maximumFractionDigits: 1 })} mil`;
+  }
+  return Math.round(reais).toLocaleString("pt-BR");
+}
+
 /** "1234,56" → "1234,56" sem símbolo, para preencher inputs de edição. */
 export function centsToInput(cents: Cents): string {
   const sign = cents < 0 ? "-" : "";
