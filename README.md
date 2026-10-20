@@ -158,3 +158,15 @@ supabase/
   tests/              testes pgTAP de RLS
   templates/          e-mails de login em português
 ```
+
+## Versões e como voltar para uma fase anterior
+
+| Versão | Commit | Banco necessário |
+|---|---|---|
+| Fase 1 (MVP) | [`fa03367`](https://github.com/amanciomr/controle_financeiro/tree/fa03367ad30a625a9479fd063f8a68bc9c950797) | migrações `20261019000001` e `20261019000002` |
+| Fase 2 (cartões, gráficos, filtro por pessoa) | `c33ea3e` | + `20261021000001_cards.sql` |
+
+As migrações só **acrescentam** tabelas e colunas, então uma versão antiga do app funciona com o banco de uma fase posterior (as tabelas novas ficam sem uso). Para voltar:
+
+- **App no ar (mais rápido)**: Vercel → *Deployments* → deploy do commit desejado → ⋯ → *Promote to Production* (ou *Instant Rollback*). Leva segundos e não mexe no banco.
+- **Código**: o commit continua no histórico para sempre; baixe em `https://github.com/amanciomr/controle_financeiro/archive/<commit>.zip`.
