@@ -2,8 +2,9 @@
 
 App web (PWA) de controle financeiro do casal: **quanto ainda dá para gastar hoje**, quanto já foi gasto e **onde o mês vai fechar**. Mobile-first, em português, valores em R$, fuso America/Bahia. Rafael e Ana têm logins separados e compartilham as mesmas finanças (a "casa").
 
-> Fase 1 (MVP) concluída: login, casa com convite, categorias, lançamentos, recorrências, tela Hoje com meta diária dinâmica e tela Mês com tabela diária e rolling forecast.
-> Fases 2 e 3 (cartões e faturas, gráficos, orçamentos, importação/exportação) estão planejadas em [`docs/PROPOSTA.md`](docs/PROPOSTA.md).
+> **Fase 1** (MVP): login, casa com convite, categorias, lançamentos, recorrências, tela Hoje com meta diária dinâmica e tela Mês com tabela diária e rolling forecast.
+> **Fase 2**: cartões de crédito com faturas, compras parceladas, visões competência × caixa, gráficos e filtro por pessoa.
+> Fase 3 (orçamento por categoria, importação/exportação) está planejada em [`docs/PROPOSTA.md`](docs/PROPOSTA.md).
 
 ## Stack
 
@@ -24,6 +25,8 @@ Toda a matemática fica em funções puras em [`src/lib/domain/`](src/lib/domain
 | `budget.ts` | receita prevista, comprometido, disponível, meta diária inicial e dinâmica |
 | `forecast.ts` | fechamento do mês no ritmo atual e cumprindo a meta, semáforo |
 | `daily-table.ts` / `balance.ts` | tabela dia a dia e saldo projetado das contas |
+| `card.ts` | fatura de cada compra (fechamento/vencimento), parcelas, status e limite usado |
+| `charts.ts` | séries dos gráficos (acumulado, por dia, por categoria, por pessoa) |
 
 Definições usadas (mês corrente):
 
@@ -31,6 +34,8 @@ Definições usadas (mês corrente):
 - **Disponível para variáveis** = receita prevista − comprometido − meta de poupança.
 - **Meta de hoje** = (disponível − gasto variável **até ontem**) ÷ dias restantes, incluindo hoje. Fica fixa durante o dia.
 - **Pode gastar hoje** = meta de hoje − gasto variável de hoje.
+- **Recorrências** (fixos, parcelas, assinaturas) contam sempre como comprometido, mesmo em categoria variável.
+- **Cartão de crédito**: a compra entra na fatura pela data de fechamento (compra no dia do fechamento vai para a seguinte). Na meta diária vale a **competência**: a 1ª parcela conta no dia da compra e as demais como comprometido nos meses seguintes. No saldo das contas vale o **caixa**: cada parcela sai no vencimento da sua fatura.
 - **Forecast**: cenário A = ritmo médio dos dias já encerrados (nos 3 primeiros dias usa a média do mês anterior); cenário B = cumprindo a meta. Semáforo: 🟢 sobra ≥ meta de poupança, 🟡 entre zero e a meta, 🔴 negativo.
 
 ## Rodando localmente
@@ -90,6 +95,19 @@ As duas são públicas por natureza (vão para o navegador). A segurança vem da
    - Remetente: o mesmo Gmail; nome do remetente: `Finanças Amâncio`.
 6. **Authentication → Sign In / Providers → Email**: deixe *Email OTP Length* em 6.
 
+### Atualizando o banco de produção (novas migrações)
+
+Cada fase pode trazer um arquivo novo em `supabase/migrations/`. Aplique só os que ainda não rodou, em ordem, de um destes jeitos:
+
+- **SQL Editor** do Supabase: *New query* → cole o conteúdo do arquivo → *Run*;
+- ou, com o projeto ligado pelo CLI: `npx supabase db push`.
+
+| Arquivo | Fase |
+|---|---|
+| `20261019000001_schema.sql` | 1 |
+| `20261019000002_rls_and_rpcs.sql` | 1 |
+| `20261021000001_cards.sql` | 2 (cartões) |
+
 ### 2. Deploy na Vercel
 
 1. Em <https://vercel.com/new>, importe o repositório `controle_financeiro` (framework detectado: Next.js).
@@ -117,7 +135,7 @@ As duas são públicas por natureza (vão para o navegador). A segurança vem da
 - Entrar numa casa só acontece por funções `security definer` (`create_household`, `accept_invite`). O convite exige o token **e** o mesmo e-mail do convidado.
 - FKs compostas `(household_id, id)` impedem que um lançamento aponte para categoria ou conta de outra casa.
 - Triggers registram quem criou e quem editou por último cada registro.
-- [`supabase/tests/rls.test.sql`](supabase/tests/rls.test.sql) tem 35 testes: um usuário de outra casa não lê, não insere, não altera, não exclui e não se adiciona como membro.
+- [`supabase/tests/rls.test.sql`](supabase/tests/rls.test.sql) tem 35 testes: um usuário de outra casa não lê, não insere, não altera, não exclui e não se adiciona como membro. [`cards.test.sql`](supabase/tests/cards.test.sql) cobre as compras no cartão (14 testes).
 
 ## Estrutura
 
@@ -125,7 +143,7 @@ As duas são públicas por natureza (vão para o navegador). A segurança vem da
 src/
   app/
     (auth)/           entrar, bem-vindo (criar casa / aceitar convite), convite/[token]
-    (app)/            Hoje, mes/[mes], lancamentos, recorrentes, categorias, configuracoes, mais
+    (app)/            Hoje, mes/[mes], lancamentos, cartoes, recorrentes, categorias, configuracoes, mais
     actions/          Server Actions (gravações validadas com Zod)
     auth/confirm/     destino do link mágico
   components/         formulário de lançamento, botão +, tabela, cards
