@@ -116,3 +116,29 @@ describe("signalFor", () => {
     expect(signalFor(0, 0)).toBe("green");
   });
 });
+
+describe("parcelas recorrentes em categoria variável", () => {
+  it("não inflam o ritmo de gasto do dia a dia", () => {
+    const base: BudgetEntry[] = [
+      { date: "2026-10-01", amount: 1000000, type: "income", status: "done", nature: "fixed" },
+      { date: "2026-10-02", amount: 3000, type: "expense", status: "done", nature: "variable" },
+    ];
+    // Parcela de viagem já confirmada, gerada por recorrência, em categoria variável.
+    const installment: BudgetEntry = {
+      date: "2026-10-01",
+      amount: 100000,
+      type: "expense",
+      status: "done",
+      nature: "variable",
+      recurring: true,
+    };
+    const s = summarizeMonth({
+      month: "2026-10",
+      today: "2026-10-11",
+      entries: [...base, installment],
+    });
+    expect(s.committed).toBe(100000);
+    expect(s.variableSpent).toBe(3000);
+    expect(forecastMonth(s).pace.dailyRate).toBe(300); // 3000 / 10 dias, sem a parcela
+  });
+});

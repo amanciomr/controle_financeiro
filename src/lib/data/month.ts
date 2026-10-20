@@ -99,7 +99,14 @@ export async function ensureRecurrences(ctx: AppContext, from: ISODate, to: ISOD
 export function toBudgetEntry(
   tx: Pick<
     Transaction,
-    "date" | "amount" | "type" | "status" | "category_id" | "purchase_id" | "installment_number"
+    | "date"
+    | "amount"
+    | "type"
+    | "status"
+    | "category_id"
+    | "purchase_id"
+    | "installment_number"
+    | "recurrence_id"
   >,
   categories: Map<string, Category>,
 ): BudgetEntry {
@@ -110,6 +117,7 @@ export function toBudgetEntry(
     status: tx.status,
     nature: categories.get(tx.category_id)?.nature ?? "variable",
     installmentCarry: tx.purchase_id != null && (tx.installment_number ?? 1) >= 2,
+    recurring: tx.recurrence_id != null,
   };
 }
 
@@ -147,7 +155,9 @@ export async function loadMonth(ctx: AppContext, month: YearMonth): Promise<Mont
     fetchAll((from, to) =>
       ctx.supabase
         .from("transactions")
-        .select("date, amount, type, status, category_id, purchase_id, installment_number")
+        .select(
+          "date, amount, type, status, category_id, purchase_id, installment_number, recurrence_id",
+        )
         .eq("household_id", ctx.household.id)
         .eq("type", "expense")
         .gte("date", monthStart(prev))

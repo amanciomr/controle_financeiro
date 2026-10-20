@@ -25,6 +25,8 @@ export interface BudgetEntry {
   nature: Nature;
   /** Parcela ≥ 2 de compra no cartão: conta como comprometido do mês em que cai. */
   installmentCarry?: boolean;
+  /** Gerado por uma recorrência (fixos, parcelas, assinaturas): sempre comprometido. */
+  recurring?: boolean;
 }
 
 export type ExpenseBucket = "committed" | "variable";
@@ -32,11 +34,17 @@ export type ExpenseBucket = "committed" | "variable";
 /**
  * Classifica uma despesa:
  * - comprometido: categoria fixa (prevista ou realizada), qualquer despesa ainda
- *   prevista (ex.: boleto agendado) e parcelas antigas de cartão;
+ *   prevista (ex.: boleto agendado), tudo que vem de uma recorrência (mesmo em
+ *   categoria variável, como parcelas de uma viagem) e parcelas antigas de cartão;
  * - variável: despesa realizada de categoria variável.
  */
 export function expenseBucket(entry: BudgetEntry): ExpenseBucket {
-  if (entry.nature === "fixed" || entry.status === "planned" || entry.installmentCarry) {
+  if (
+    entry.nature === "fixed" ||
+    entry.status === "planned" ||
+    entry.installmentCarry ||
+    entry.recurring
+  ) {
     return "committed";
   }
   return "variable";

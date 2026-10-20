@@ -65,6 +65,10 @@ describe("expenseBucket", () => {
     expect(expenseBucket(variable("2026-10-01", 1))).toBe("variable");
   });
 
+  it("recorrência é comprometido mesmo em categoria variável (ex.: parcelas de viagem)", () => {
+    expect(expenseBucket({ ...variable("2026-10-01", 1), recurring: true })).toBe("committed");
+  });
+
   it("parcela antiga de cartão é comprometido", () => {
     expect(expenseBucket({ ...variable("2026-10-01", 1), installmentCarry: true })).toBe(
       "committed",
