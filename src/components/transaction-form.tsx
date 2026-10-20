@@ -1,11 +1,16 @@
 "use client";
 
+import Link from "next/link";
 import { useMemo, useRef, useState, useTransition } from "react";
 import {
+  deletePurchase,
   deleteTransaction,
   saveTransaction,
   type TransactionInput,
 } from "@/app/actions/transactions";
+import { planInstallments } from "@/lib/domain/card";
+import { formatDayMonth } from "@/lib/domain/dates";
+import { formatBRL } from "@/lib/domain/money";
 import { PAYMENT_METHODS, type PaymentMethod } from "@/lib/labels";
 import { MoneyInput } from "./money-input";
 import { cx } from "./ui";
@@ -24,6 +29,8 @@ export interface FormOptions {
   categories: FormCategory[];
   members: { userId: string; name: string }[];
   accounts: { id: string; name: string }[];
+  /** Cartões de crédito ativos. */
+  cards: { id: string; name: string; closingDay: number; dueDay: number }[];
   me: { userId: string; lastPaymentMethod: PaymentMethod | null; lastAccountId: string | null };
   today: string;
   /** Descrições recentes → categoria usada (sugestão de categoria). */
@@ -42,22 +49,31 @@ export interface TransactionValues {
   date: string;
   status?: "planned" | "done";
   notes: string;
+  /** Compra no cartão. */
+  cardId: string | null;
+  installments: number;
+  /** Ao editar uma compra no cartão existente. */
+  purchaseId?: string;
 }
 
 const CASA = "casa";
 const QUICK_CATEGORY_COUNT = 8;
+const INSTALLMENT_OPTIONS = Array.from({ length: 24 }, (_, i) => i + 1);
 
 export function emptyValues(options: FormOptions): TransactionValues {
+  const last = options.me.lastAccountId;
   return {
     type: "expense",
     amount: 0,
     description: "",
     categoryId: null,
     paymentMethod: options.me.lastPaymentMethod ?? "pix",
-    accountId: options.me.lastAccountId,
+    accountId: options.accounts.some((a) => a.id === last) ? last : null,
     personUserId: options.me.userId,
     date: options.today,
     notes: "",
+    cardId: options.cards.find((c) => c.id === last)?.id ?? options.cards[0]?.id ?? null,
+    installments: 1,
   };
 }
 
@@ -142,6 +158,7 @@ export function TransactionForm({
       return setError("Informe a descrição.");
     }
     if (!v.categoryId) return setError("Escolha uma categoria.");
+    if (onCard && !v.cardId) return setError("Escolha o cartão.");
     const input: TransactionInput = {
       id: v.id,
       type: v.type,
@@ -152,8 +169,11 @@ export function TransactionForm({
       accountId: v.accountId,
       personUserId: v.personUserId,
       date: v.date,
-      status: v.status,
+      status: onCard ? undefined : v.status,
       notes: v.notes,
+      cardId: onCard ? v.cardId : null,
+      installments: onCard ? v.installments : 1,
+      purchaseId: v.purchaseId,
     };
     start(async () => {
       const res = await saveTransaction(input);
@@ -163,15 +183,31 @@ export function TransactionForm({
   }
 
   function remove() {
-    if (!v.id || !confirm("Excluir este lançamento?")) return;
+    if (v.purchaseId) {
+      if (!confirm("Excluir esta compra e todas as parcelas?")) return;
+    } else if (!v.id || !confirm("Excluir este lançamento?")) return;
     start(async () => {
-      const res = await deleteTransaction(v.id!);
+      const res = v.purchaseId
+        ? await deletePurchase(v.purchaseId)
+        : await deleteTransaction(v.id!);
       if (!res.ok) return setError(res.error);
       onDeleted?.();
     });
   }
 
   const isFuture = v.date > options.today;
+  const onCard =
+    v.type === "expense" && v.paymentMethod === "credit_card" && options.cards.length > 0;
+  const selectedCard = options.cards.find((c) => c.id === v.cardId);
+  const plan =
+    onCard && selectedCard && v.amount > 0
+      ? planInstallments({
+          purchaseDate: v.date,
+          total: v.amount,
+          count: v.installments,
+          card: selectedCard,
+        })
+      : null;
 
   return (
     <form onSubmit={submit} className="space-y-4">
@@ -282,6 +318,63 @@ export function TransactionForm({
         </div>
       )}
 
+      {onCard && (
+        <div className="space-y-3 rounded-xl border border-line bg-card-2 p-3">
+          <div className="flex flex-wrap gap-2">
+            {options.cards.map((c) => (
+              <button
+                key={c.id}
+                type="button"
+                className="chip"
+                aria-pressed={v.cardId === c.id}
+                onClick={() => set("cardId", c.id)}
+              >
+                💳 {c.name}
+              </button>
+            ))}
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="text-sm text-muted" htmlFor="tx-installments">
+              Parcelas
+            </label>
+            <select
+              id="tx-installments"
+              className="field w-24! py-1.5"
+              value={v.installments}
+              onChange={(e) => set("installments", Number(e.target.value))}
+            >
+              {INSTALLMENT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n === 1 ? "À vista" : `${n}x`}
+                </option>
+              ))}
+            </select>
+            {plan && v.installments > 1 && (
+              <span className="text-sm text-muted">de {formatBRL(plan[1].amount)}</span>
+            )}
+          </div>
+          {plan && (
+            <p className="text-xs text-muted">
+              {v.installments > 1 ? "1ª parcela na fatura" : "Entra na fatura"} que vence em{" "}
+              <strong className="text-fg">{formatDayMonth(plan[0].statement.dueDate)}</strong>
+              {v.installments > 1 &&
+                `; a última vence em ${formatDayMonth(plan[plan.length - 1].statement.dueDate)}/${plan[plan.length - 1].statement.dueDate.slice(0, 4)}`}
+              . No dia a dia conta {v.installments > 1 ? "só a 1ª parcela" : "o valor"} hoje; as
+              demais entram como comprometido nos próximos meses.
+            </p>
+          )}
+        </div>
+      )}
+      {v.type === "expense" && v.paymentMethod === "credit_card" && options.cards.length === 0 && (
+        <p className="text-xs text-muted">
+          Dica: cadastre seus cartões em{" "}
+          <Link href="/cartoes" className="underline">
+            Cartões
+          </Link>{" "}
+          para controlar faturas e parcelas.
+        </p>
+      )}
+
       {!showMore ? (
         <button
           type="button"
@@ -327,7 +420,7 @@ export function TransactionForm({
               </select>
             </div>
           </div>
-          {options.accounts.length > 0 && (
+          {options.accounts.length > 0 && !onCard && (
             <div>
               <label className="label" htmlFor="tx-account">
                 Conta
@@ -360,7 +453,7 @@ export function TransactionForm({
               onChange={(e) => set("notes", e.target.value)}
             />
           </div>
-          {variant === "full" && (
+          {variant === "full" && !onCard && (
             <label className="flex items-center gap-3 text-sm">
               <input
                 type="checkbox"
@@ -375,7 +468,7 @@ export function TransactionForm({
         </div>
       )}
 
-      {variant === "quick" && isFuture && (
+      {variant === "quick" && isFuture && !onCard && (
         <p className="text-xs text-muted">Data futura: será lançado como previsto.</p>
       )}
       {error && (

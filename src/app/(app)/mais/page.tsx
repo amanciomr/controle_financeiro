@@ -7,6 +7,7 @@ import { getAppContext } from "@/lib/data/context";
 export const metadata: Metadata = { title: "Mais" };
 
 const LINKS = [
+  { href: "/cartoes", icon: "💳", label: "Cartões", hint: "Faturas, parcelas e limite" },
   {
     href: "/recorrentes",
     icon: "🔁",
@@ -42,7 +43,7 @@ export default async function MorePage() {
         ))}
       </Card>
       <p className="px-1 text-xs text-muted">
-        Cartões, gráficos, importação e exportação chegam nas próximas fases.
+        Orçamento por categoria, importação e exportação chegam na Fase 3.
       </p>
       <form action={signOut}>
         <button className="btn-ghost w-full">Sair ({ctx.email})</button>

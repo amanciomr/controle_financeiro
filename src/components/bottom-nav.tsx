@@ -18,7 +18,9 @@ const ITEMS = [
     label: "Mais",
     icon: "☰",
     match: (p: string) =>
-      ["/mais", "/recorrentes", "/categorias", "/configuracoes"].some((x) => p.startsWith(x)),
+      ["/mais", "/recorrentes", "/categorias", "/configuracoes", "/cartoes"].some((x) =>
+        p.startsWith(x),
+      ),
   },
 ];
 

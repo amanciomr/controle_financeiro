@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { FormOptions } from "@/components/transaction-form";
 import { addDays } from "@/lib/domain/dates";
+import { cardsOf } from "./cards";
 import { getAppContext } from "./context";
 
 /**
@@ -52,6 +53,9 @@ export const getFormOptions = cache(async (): Promise<FormOptions> => {
     accounts: ctx.accounts
       .filter((a) => !a.archived && a.kind !== "credit_card")
       .map((a) => ({ id: a.id, name: a.name })),
+    cards: cardsOf(ctx.accounts)
+      .filter((c) => !c.archived)
+      .map((c) => ({ id: c.id, name: c.name, ...c.cycle })),
     me: {
       userId: ctx.userId,
       lastPaymentMethod: ctx.me.last_payment_method,

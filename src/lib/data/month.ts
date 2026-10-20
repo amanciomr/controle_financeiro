@@ -19,6 +19,7 @@ import { type Forecast, forecastMonth } from "@/lib/domain/forecast";
 import { occurrencesBetween, type RecurrenceRule } from "@/lib/domain/recurrence";
 import type { Database } from "@/lib/supabase/database.types";
 import type { AppContext, Category } from "./context";
+import { matchesPerson, type PersonFilter } from "./person";
 
 type Tables = Database["public"]["Tables"];
 export type Transaction = Tables["transactions"]["Row"];
@@ -27,7 +28,7 @@ export type Recurrence = Tables["recurrences"]["Row"];
 const PAGE = 1000;
 
 /** PostgREST devolve no máximo 1000 linhas por vez; busca todas as páginas. */
-async function fetchAll<T>(
+export async function fetchAll<T>(
   query: (from: number, to: number) => PromiseLike<{ data: T[] | null; error: unknown }>,
 ): Promise<T[]> {
   const all: T[] = [];
@@ -134,7 +135,16 @@ export interface MonthData {
 }
 
 /** Lançamentos do mês + resumo + forecast. */
-export async function loadMonth(ctx: AppContext, month: YearMonth): Promise<MonthData> {
+/**
+ * Lançamentos do mês + resumo + forecast. Com filtro por pessoa, só os
+ * lançamentos dela entram nas contas; meta de poupança em valor fixo é
+ * proporcional à fatia da receita dessa pessoa.
+ */
+export async function loadMonth(
+  ctx: AppContext,
+  month: YearMonth,
+  person: PersonFilter = "",
+): Promise<MonthData> {
   const start = monthStart(month);
   const end = monthEnd(month);
   const prev = addMonths(month, -1);
@@ -156,7 +166,7 @@ export async function loadMonth(ctx: AppContext, month: YearMonth): Promise<Mont
       ctx.supabase
         .from("transactions")
         .select(
-          "date, amount, type, status, category_id, purchase_id, installment_number, recurrence_id",
+          "date, amount, type, status, category_id, purchase_id, installment_number, recurrence_id, person_user_id",
         )
         .eq("household_id", ctx.household.id)
         .eq("type", "expense")
@@ -166,19 +176,29 @@ export async function loadMonth(ctx: AppContext, month: YearMonth): Promise<Mont
     ),
   ]);
 
-  const entries = transactions.map((t) => toBudgetEntry(t, categories));
-  const summary = summarizeMonth({
-    month,
-    today: ctx.today,
-    entries,
-    savingsGoal: ctx.savingsGoal,
-  });
-  const previousEntries = previous.map((t) => toBudgetEntry(t, categories));
+  const mine = transactions.filter((t) => matchesPerson(t.person_user_id, person));
+  const entries = mine.map((t) => toBudgetEntry(t, categories));
+  let savingsGoal = ctx.savingsGoal;
+  if (person && savingsGoal.mode === "amount") {
+    const income = (list: Transaction[]) =>
+      list
+        .filter((t) => t.type === "income" && t.status !== "skipped")
+        .reduce((s, t) => s + t.amount, 0);
+    const total = income(transactions);
+    savingsGoal = {
+      mode: "amount",
+      value: total > 0 ? Math.round((savingsGoal.value * income(mine)) / total) : 0,
+    };
+  }
+  const summary = summarizeMonth({ month, today: ctx.today, entries, savingsGoal });
+  const previousEntries = previous
+    .filter((t) => matchesPerson(t.person_user_id, person))
+    .map((t) => toBudgetEntry(t, categories));
   const forecast = forecastMonth(
     summary,
     previousEntries.length > 0 ? dailyVariableAverage(previousEntries, prev) : null,
   );
-  return { month, transactions, entries, summary, forecast };
+  return { month, transactions: mine, entries, summary, forecast };
 }
 
 /** Tabela diária, incluindo o saldo projetado das contas. */
@@ -212,4 +232,86 @@ export async function loadDailyTable(ctx: AppContext, data: MonthData): Promise<
   }));
 
   return buildDailyTable({ summary: data.summary, entries: data.entries, accounts, movements });
+}
+
+export interface CashFlow {
+  income: number;
+  /** Saídas fora do cartão (Pix, débito, boleto…), pela data de pagamento. */
+  direct: number;
+  /** Faturas de cartão que vencem no mês. */
+  bills: { cardId: string; dueDate: string; total: number }[];
+  net: number;
+}
+
+/**
+ * Visão de caixa do mês: o que entra e sai das contas pela data de caixa
+ * (no cartão, o vencimento da fatura), diferente da competência usada na
+ * meta diária.
+ */
+export async function loadCashFlow(
+  ctx: AppContext,
+  month: YearMonth,
+  person: PersonFilter = "",
+): Promise<CashFlow> {
+  const cardIds = new Set(ctx.accounts.filter((a) => a.kind === "credit_card").map((a) => a.id));
+  const rows = await fetchAll((from, to) =>
+    ctx.supabase
+      .from("transactions")
+      .select("cash_date, amount, type, account_id, person_user_id")
+      .eq("household_id", ctx.household.id)
+      .neq("status", "skipped")
+      .gte("cash_date", monthStart(month))
+      .lte("cash_date", monthEnd(month))
+      .order("id")
+      .range(from, to),
+  );
+  let income = 0;
+  let direct = 0;
+  const bills = new Map<string, { cardId: string; dueDate: string; total: number }>();
+  for (const r of rows) {
+    if (!matchesPerson(r.person_user_id, person)) continue;
+    if (r.type === "income") income += r.amount;
+    else if (r.account_id && cardIds.has(r.account_id)) {
+      const key = `${r.account_id}|${r.cash_date}`;
+      const bill = bills.get(key) ?? { cardId: r.account_id, dueDate: r.cash_date, total: 0 };
+      bill.total += r.amount;
+      bills.set(key, bill);
+    } else direct += r.amount;
+  }
+  const billList = [...bills.values()].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+  return {
+    income,
+    direct,
+    bills: billList,
+    net: income - direct - billList.reduce((s, b) => s + b.total, 0),
+  };
+}
+
+/** Despesas do mês e dos 3 anteriores, para os gráficos por categoria e pessoa. */
+export async function loadExpenseHistory(
+  ctx: AppContext,
+  month: YearMonth,
+  person: PersonFilter = "",
+) {
+  const rows = await fetchAll((from, to) =>
+    ctx.supabase
+      .from("transactions")
+      .select("date, amount, category_id, person_user_id")
+      .eq("household_id", ctx.household.id)
+      .eq("type", "expense")
+      .neq("status", "skipped")
+      .gte("date", monthStart(addMonths(month, -3)))
+      .lte("date", monthEnd(month))
+      .order("id")
+      .range(from, to),
+  );
+  const parentOf = new Map(ctx.categories.map((c) => [c.id, c.parent_id ?? c.id]));
+  return rows
+    .filter((r) => matchesPerson(r.person_user_id, person))
+    .map((r) => ({
+      date: r.date,
+      amount: r.amount,
+      categoryId: parentOf.get(r.category_id) ?? r.category_id,
+      personUserId: r.person_user_id,
+    }));
 }

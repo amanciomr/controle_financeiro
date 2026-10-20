@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TransactionRow } from "@/components/transaction-row";
 import { Card, Empty, Money, PageHeader } from "@/components/ui";
 import { getAppContext } from "@/lib/data/context";
+import { getPersonFilter } from "@/lib/data/person";
 import { categoryMap, type Transaction } from "@/lib/data/month";
 import {
   addMonths,
@@ -33,7 +34,8 @@ export default async function TransactionsPage(props: PageProps<"/lancamentos">)
   const q = param(sp.q);
   const category = param(sp.categoria);
   const method = param(sp.forma);
-  const person = param(sp.pessoa);
+  // Sem escolha explícita na URL, usa o filtro global por pessoa.
+  const person = sp.pessoa !== undefined ? param(sp.pessoa) : await getPersonFilter(ctx);
   const status = param(sp.status);
   const type = param(sp.tipo);
 
