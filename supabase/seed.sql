@@ -19,6 +19,9 @@ declare
   day date;
   cat jsonb := '{}';
   r record;
+  compra record;
+  cartao uuid;
+  purchase uuid;
 begin
   -- Usuários -----------------------------------------------------------------
   insert into auth.users (
@@ -119,6 +122,35 @@ begin
       insert into public.transactions (household_id, date, cash_date, description, amount, type, category_id, payment_method, created_by, notes)
       values (hid, day, day, 'Cinema', 9600, 'expense', (cat->>'Lazer')::uuid, 'credit_card', ana, 'Pipoca inclusa');
     end if;
+  end loop;
+
+  -- Cartão do Rafael (fecha dia 3, vence dia 10) com compras à vista e parceladas.
+  -- Fatura: compra antes do dia 3 vence no dia 10 do mesmo mês; a partir do dia 3, no seguinte.
+  insert into public.accounts (household_id, name, kind, owner_user_id, closing_day, due_day, credit_limit, payment_account_id, created_by, updated_by)
+  values (hid, 'Nubank Rafael', 'credit_card', rafael, 3, 10, 1500000, conta, rafael, rafael)
+  returning id into cartao;
+
+  for compra in
+    select * from (values
+      ('Notebook', 480000, 10, (m0 - interval '2 months')::date + 14, (cat->>'Compras')::uuid, rafael),
+      ('Passagens aéreas', 189000, 3, (m0 - interval '1 month')::date + 20, (cat->>'Lazer')::uuid, null::uuid),
+      ('Farmácia', 8790, 1, least(m0 + 4, today), (cat->>'Saúde')::uuid, ana)
+    ) as c(descricao, total, parcelas, data, categoria, pessoa)
+  loop
+    insert into public.card_purchases (household_id, account_id, purchase_date, description, total_amount, installments, category_id, person_user_id, created_by, updated_by)
+    values (hid, cartao, compra.data, compra.descricao, compra.total, compra.parcelas, compra.categoria, compra.pessoa, rafael, rafael)
+    returning id into purchase;
+    insert into public.transactions (household_id, date, cash_date, description, amount, type, category_id, payment_method, account_id, person_user_id, status, purchase_id, installment_number, installment_total, created_by)
+    select hid,
+           (compra.data + make_interval(months => k - 1))::date,
+           make_date(
+             extract(year from date_trunc('month', compra.data) + make_interval(months => k - 1 + case when extract(day from compra.data) >= 3 then 1 else 0 end))::int,
+             extract(month from date_trunc('month', compra.data) + make_interval(months => k - 1 + case when extract(day from compra.data) >= 3 then 1 else 0 end))::int,
+             10),
+           compra.descricao,
+           compra.total / compra.parcelas + case when k <= compra.total % compra.parcelas then 1 else 0 end,
+           'expense', compra.categoria, 'credit_card', cartao, compra.pessoa, 'done', purchase, k, compra.parcelas, rafael
+      from generate_series(1, compra.parcelas) as k;
   end loop;
 
   -- Um extra recebido e um boleto agendado para o fim do mês

@@ -103,6 +103,130 @@ export type Database = {
           },
         ];
       };
+      card_purchases: {
+        Row: {
+          account_id: string;
+          category_id: string;
+          created_at: string;
+          created_by: string | null;
+          description: string;
+          household_id: string;
+          id: string;
+          installments: number;
+          notes: string | null;
+          person_user_id: string | null;
+          purchase_date: string;
+          total_amount: number;
+          updated_at: string;
+          updated_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          account_id: string;
+          category_id: string;
+          created_at?: string;
+          created_by?: string | null;
+          description: string;
+          household_id: string;
+          id?: string;
+          installments?: number;
+          notes?: string | null;
+          person_user_id?: string | null;
+          purchase_date: string;
+          total_amount: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Update: {
+          account_id?: string;
+          category_id?: string;
+          created_at?: string;
+          created_by?: string | null;
+          description?: string;
+          household_id?: string;
+          id?: string;
+          installments?: number;
+          notes?: string | null;
+          person_user_id?: string | null;
+          purchase_date?: string;
+          total_amount?: number;
+          updated_at?: string;
+          updated_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "card_purchases_household_id_account_id_fkey";
+            columns: ["household_id", "account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["household_id", "id"];
+          },
+          {
+            foreignKeyName: "card_purchases_household_id_category_id_fkey";
+            columns: ["household_id", "category_id"];
+            isOneToOne: false;
+            referencedRelation: "categories";
+            referencedColumns: ["household_id", "id"];
+          },
+          {
+            foreignKeyName: "card_purchases_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "card_purchases_household_id_person_user_id_fkey";
+            columns: ["household_id", "person_user_id"];
+            isOneToOne: false;
+            referencedRelation: "household_members";
+            referencedColumns: ["household_id", "user_id"];
+          },
+        ];
+      };
+      card_statement_payments: {
+        Row: {
+          account_id: string;
+          amount: number | null;
+          due_month: string;
+          household_id: string;
+          paid_at: string;
+          paid_by: string | null;
+        };
+        ComputedFields: never;
+        Insert: {
+          account_id: string;
+          amount?: number | null;
+          due_month: string;
+          household_id: string;
+          paid_at?: string;
+          paid_by?: string | null;
+        };
+        Update: {
+          account_id?: string;
+          amount?: number | null;
+          due_month?: string;
+          household_id?: string;
+          paid_at?: string;
+          paid_by?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "card_statement_payments_household_id_account_id_fkey";
+            columns: ["household_id", "account_id"];
+            isOneToOne: false;
+            referencedRelation: "accounts";
+            referencedColumns: ["household_id", "id"];
+          },
+          {
+            foreignKeyName: "card_statement_payments_household_id_fkey";
+            columns: ["household_id"];
+            isOneToOne: false;
+            referencedRelation: "households";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       categories: {
         Row: {
           archived: boolean;
@@ -515,6 +639,13 @@ export type Database = {
             referencedRelation: "recurrences";
             referencedColumns: ["household_id", "id"];
           },
+          {
+            foreignKeyName: "transactions_purchase_fkey";
+            columns: ["household_id", "purchase_id"];
+            isOneToOne: false;
+            referencedRelation: "card_purchases";
+            referencedColumns: ["household_id", "id"];
+          },
         ];
       };
     };
@@ -540,6 +671,10 @@ export type Database = {
           invited_by_name: string;
           token: string;
         }[];
+      };
+      save_card_purchase: {
+        Args: { p_installments: Json; p_purchase: Json; p_replace_transaction?: string };
+        Returns: string;
       };
     };
     Enums: {
